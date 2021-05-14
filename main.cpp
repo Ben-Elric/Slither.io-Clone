@@ -9,11 +9,6 @@
 #pragma comment(lib, "winmm.lib")//声音库
 
 
-//缺失：
-//游戏界面:开始界面，死亡界面（died代替也可）
-//游戏音效：运行音效，死亡音效
-//游戏死亡判定
-
 
 
 /* 窗口大小 */
@@ -22,7 +17,7 @@ const short ScreenHeight = 600;//生成窗口
 
 /* 全局变量 */
 long ret = 0;
-MOUSEMSG msg;//easyx控制鼠标函数，保存鼠标信息
+MOUSEMSG msg;//EasyX控制鼠标函数，保存鼠标信息
 const short gap = 20;
 const short xSide = ScreenWidth / 2 + gap;
 const short ySide = ScreenHeight / 2 + gap;
@@ -32,7 +27,7 @@ const short nodeSize = 17;//节点长度
 const short nodeGap = 16;
 const short stepLen = 4;
 const short frame = 4;//length与结点增加的关系
-const short snakeSpecies = 20;//“在线”蛇总数
+const short snakeSpecies = 20;//AI蛇数
 int killCount = 0;//计数
 int mapX = 0;
 int mapY = 0;
@@ -56,21 +51,23 @@ const COLORREF mapLineColor = RGB(32, 32, 32);
 
 
 
-// 透明贴图函数：!!!!!!!!!!!!!!!!!!!!!!!!!
-// 参数：
-//		x, y:	目标贴图位置
-//		srcimg: 源 IMAGE 对象指针。NULL 表示默认窗体
-//		dstimg: 目标 IMAGE 对象指针。NULL 表示默认窗体
-//		transparentcolor: 透明色。srcimg 的该颜色并不会复制到 dstimg 上，从而实现透明贴图
+
 void putTimage(int x, int y, IMAGE* srcimg, IMAGE* dstimg = NULL, UINT transparentcolor = 0)
 {
-	HDC dstDC = GetImageHDC(dstimg);
+	HDC dstDC = GetImageHDC(dstimg);// 获取绘图设备句柄(HDC)
 	HDC srcDC = GetImageHDC(srcimg);
 	int w = srcimg->getwidth();
 	int h = srcimg->getheight();
 	// 使用 Windows GDI 函数实现透明位图
 	TransparentBlt(dstDC, x, y, w, h, srcDC, 0, 0, w, h, transparentcolor);//TranspaarentBlt ?
 }
+// 透明贴图函数：
+// 参数：x, y:	目标贴图位置
+//		srcimg: 源 IMAGE 对象指针。NULL 表示默认窗体
+//		dstimg: 目标 IMAGE 对象指针。NULL 表示默认窗体
+//		transparentcolor: 透明色。srcimg 的该颜色并不会复制到 dstimg 上，从而实现透明贴图
+
+
 
 /* 蛇基类 */
 class SnakeBase
@@ -81,13 +78,14 @@ public:
 	{
 		Count++;
 		isDead = false;
-		length = 50 + rand() % 25;//生成随机数
+		length = 50 + rand() % 25;//生成随机数，确定初始长度
 		nNode = length / 5;
 		maxNode = 9999;
 		imgHead = imgNode = imgTail = nullptr;
 		headNode = tailNode = nullptr;
 		nodeMsg = nullptr;
 	}
+
 	// 析构函数
 	virtual ~SnakeBase()
 	{
@@ -187,7 +185,7 @@ public:
 	// 刷新数据
 	void FlushData(short& n, int& dx, int& dy)
 	{
-		if (n == frame)//什么意思？frame什么意思
+		if (n == frame)
 		{
 			nodeMsg = new POINT[nNode];//POINT结构定义点的x和y坐标。确定鼠标位置
 			Node* temp = headNode;
@@ -203,9 +201,9 @@ public:
 
 		Node* temp = tailNode;
 		int i = nNode - 2;//除了headNode&tailNode
-		while (temp != headNode)//这里的tailNode怎么和headNode有联系的？是CreateNode里的吗
+		while (temp != headNode)
 		{
-			if (n == 1)//这里的n是什么意思
+			if (n == 1)
 			{
 				temp->x = nodeMsg[i].x;
 				temp->y = nodeMsg[i].y;
@@ -235,7 +233,7 @@ public:
 	{
 		int n = nNode;
 		length += ex;
-		n = length / 5 - n;// ?
+		n = length / 5 - n;
 		if (n > 0)
 		{
 			while (nNode < maxNode && n != 0)//增加节点
@@ -320,7 +318,7 @@ public:
 		int headX = rand() % (imgMap->getwidth() - xSide * 2 - nodeSize * 10) + xSide + nodeSize;
 		int headY = rand() % (imgMap->getheight() - ySide * 2 - nodeSize * 12) + ySide + nodeSize;//开始时头结点随机出现
 		Createnode(headX, headY);
-		nt = frame; //nt是什么？
+		nt = frame; 
 	}
 	// 是否死亡//?????
 	void IsDead()
@@ -329,7 +327,7 @@ public:
 			isDead = true;
 		else
 		{
-			double radian = atan2(headNode->y - headNode->nextNode->y, headNode->x - headNode->nextNode->x);
+			double radian = atan2(headNode->y - headNode->nextNode->y, headNode->x - headNode->nextNode->x);//radian为弧度
 			int x = ScreenWidth / 2 + int(nodeSize / 2 * cos(radian));
 			int y = ScreenHeight / 2 + int(nodeSize / 2 * sin(radian));
 			COLORREF c = getpixel(x, y);// 获取点的颜色
@@ -337,7 +335,7 @@ public:
 				isDead = true;
 			else
 			{
-				for (int i = 1; i < 8; i++)//
+				for (int i = 1; i < 8; i++)
 				{
 					x = ScreenWidth / 2 + int(nodeSize / 2 * cos(radian));
 					y = ScreenHeight / 2 + int(nodeSize / 2 * sin(radian));
@@ -450,6 +448,7 @@ public:
 			return is_dead;
 		}
 	}
+
 	// 位置是否接触 player
 	bool IsInPlayer(int headX, int headY)
 	{
@@ -472,6 +471,7 @@ public:
 			double rad = atan2(ddy, ddx);
 			isFast = rand() % 1200 < 100 ? true : false;
 			curLine = minLine + (rand() % 21) * frame;
+
 			do
 			{
 				ddx = (rand() % ScreenWidth + 40) * (rand() % 1000 < 500 ? 1 : -1);
@@ -489,7 +489,7 @@ public:
 		nt--;
 		curLine--;
 
-		if (nt <= 0)//nt=?
+		if (nt <= 0)
 		{
 			nt = frame;
 			if (rand() % 1000 < 120)
@@ -506,7 +506,7 @@ public:
 				if (deadX <= xSide || deadX >= imgMap->getwidth() - 1 - xSide)
 				{
 					ddx *= -1;
-					ddy += rand() % 30 + 30;//?
+					ddy += rand() % 30 + 30;
 				}
 				if (deadY <= ySide || deadY >= imgMap->getheight() - 1 - ySide)
 				{
@@ -564,7 +564,7 @@ public:
 
 
 private:
-	short nt;//?
+	short nt;
 	int minLine;
 	int curLine;
 	int ddx, ddy;
@@ -600,6 +600,8 @@ public:
 		setbkcolor(MAGENTA);
 		cleardevice();
 		//布置结束
+	
+
 		//布置方格线
 		solidrectangle(xSide, ySide, imgMap->getwidth() - 1 - xSide, imgMap->getheight() - 1 - ySide);// 画填充矩形(无边框)
 		for (int i = gap + xSide; i < imgMap->getwidth() - xSide; i += gap)
@@ -641,7 +643,7 @@ public:
 
 
 		Draw();
-		outtextxy((ScreenWidth - textwidth(_T("Push Left or Right key to accelerate"))) / 2, ScreenHeight / 4 * 3 + 25, _T("Left or Right key to accelerate"));
+		outtextxy((ScreenWidth - textwidth(_T("Left or Right key to accelerate"))) / 2, ScreenHeight / 4 * 3 + 25, _T("Left or Right key to accelerate"));
 		outtextxy((ScreenWidth - textwidth(_T("Push any key to continue"))) / 2, ScreenHeight / 4 * 3 + 50, _T("Push any key to continue"));
 		FlushBatchDraw();
 		ret = _getwch();
@@ -724,7 +726,7 @@ public:
 	{
 		short ddx = 0;
 		short ddy = 0;
-		time_t ct = clock() - time_t(100);//??????
+		time_t ct = clock() - time_t(100);
 		Ai* temp = ai->next;
 		while (temp != ai)
 		{
@@ -734,8 +736,9 @@ public:
 		temp->ais->ct = clock();
 		temp = temp->next;
 		int ex = 0;
+
 		bool isFast = false;
-		while (!(GetAsyncKeyState(VK_ESCAPE) & 0x8000) && !player->isDead)
+		while (!(GetAsyncKeyState(VK_ESCAPE) & 0x8000) && !player->isDead)//接受键盘信号除了esc
 		{
 			if (GetAsyncKeyState('P') & 0x8000)
 				ret = _getwch();
@@ -755,7 +758,7 @@ public:
 
 
 
-			if (clock() - temp->ais->ct > flushTime && !player->isDead)
+			if (clock() - temp->ais->ct  >  flushTime &&  !player->isDead )
 			{
 				temp->ais->ct = clock();
 				temp->ais->Move(ex);
